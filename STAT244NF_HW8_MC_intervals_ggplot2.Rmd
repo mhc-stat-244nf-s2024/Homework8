@@ -1,0 +1,175 @@
+---
+title: "Homework 8: Multiple Simulations, Monte Carlo Intervals, ggplot2"
+subtitle: "STAT 244NF: Infectious Disease Modeling"
+author: "YOUR NAME HERE"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Instructions:
+
+1. Please replace "YOUR NAME HERE" under author above with your name before you knit your final document for submission.
+2. All of your homework needs to be completed in this document, whether it requires R or just typed responses. As we incorporate more statistical computing into the course, it will be important that you are comfortable with R Markdown, so start now. Remember that R Markdown gives us a convenient framework for reproducible statistical reports because it contains a complete record of our analyses and conclusions.
+3. You may knit to PDF, HTML, or Word (click on the drop-down menu for Knit to choose the file output type). 
+4. Before submitting your work, please make sure the knitted file is well organized, legible, and looks the way you expect!
+5. Please include the names of any classmates with whom you worked on this homework, as well as any external resources that you might have used.
+6. This homework assignment is **due on Tuesday, April 16, 2024 and should be submitted to Gradescope**.
+
+- *Collaborators:*
+
+- *External resources:*
+
+```{r}
+## provided functions
+lambda_t_fcn <- function(RN, D, I_i, N){
+  c_e <- RN/D
+  return(1-exp(-c_e*I_i/N))
+}
+
+SEIR_simulation <- function(N, S0, E0, I0, RN, pD, D, TotalTime, stochastic=FALSE){
+  risk_pi <- 1-exp(-1/pD)
+  risk_rho <- 1-exp(-1/D)
+  
+  if (stochastic==TRUE){
+      SEIR_df <- data.frame(Time=0:TotalTime,
+                     S=NA,
+                     E=NA,
+                     I=NA,
+                     R=NA,
+                     E_SE=NA,
+                     I_EI=NA, 
+                     R_IR=NA,
+                     lambda_t=NA)
+
+      SEIR_df$S[1] <- S0
+      SEIR_df$E[1] <- E0
+      SEIR_df$I[1] <- I0
+      SEIR_df$R[1] <- N-S0-E0-I0
+    
+    for (t in 2:(TotalTime+1)){
+      SEIR_df$lambda_t[t] <- lambda_t_fcn(RN=RN, D=D, I_i=SEIR_df$I[t-1], N=N)
+      SEIR_df$E_SE[t] <- rbinom(n=1, size=SEIR_df$S[t-1], prob=SEIR_df$lambda_t[t])
+      SEIR_df$I_EI[t] <- rbinom(n=1, size=SEIR_df$E[t-1], prob=risk_pi)
+      SEIR_df$R_IR[t] <- rbinom(n=1, size=SEIR_df$I[t-1], prob=risk_rho)
+      SEIR_df$S[t] <- SEIR_df$S[t-1]-SEIR_df$E_SE[t]
+      SEIR_df$E[t] <- SEIR_df$E[t-1]+SEIR_df$E_SE[t]-SEIR_df$I_EI[t]
+      SEIR_df$I[t] <- SEIR_df$I[t-1]+SEIR_df$I_EI[t]-SEIR_df$R_IR[t]
+      SEIR_df$R[t] <- SEIR_df$R[t-1]+SEIR_df$R_IR[t]
+    }
+  }
+  else {
+      SEIR_df <- data.frame(Time=0:TotalTime,
+                     S=NA,
+                     E=NA,
+                     I=NA,
+                     R=NA,
+                     lambda_t=NA)
+
+      SEIR_df$S[1] <- S0
+      SEIR_df$E[1] <- E0
+      SEIR_df$I[1] <- I0
+      SEIR_df$R[1] <- N-S0-E0-I0
+    
+    for (t in 2:(TotalTime+1)){
+      SEIR_df$lambda_t[t] <- lambda_t_fcn(RN=RN, D=D, I_i=SEIR_df$I[t-1], N=N)
+      SEIR_df$S[t] <- SEIR_df$S[t-1]-SEIR_df$lambda_t[t]*SEIR_df$S[t-1]
+      SEIR_df$E[t] <- SEIR_df$E[t-1]+SEIR_df$lambda_t[t]*SEIR_df$S[t-1]-risk_pi*SEIR_df$I[t-1]
+      SEIR_df$I[t] <- SEIR_df$I[t-1]+risk_pi*SEIR_df$I[t-1]-risk_rho*SEIR_df$R[t-1]
+      SEIR_df$R[t] <- SEIR_df$R[t-1]+risk_rho*SEIR_df$R[t-1]
+    }
+  }
+
+  return(SEIR_df)
+}
+```
+
+## Converting lists to dataframes
+
+**LD 1. Using the `SEIR_simulation` function provided above, complete the following:**
+
+  - Run 10 stochastic simulations for the following initial conditions: `N=1500, S0=1499, E0=0, I0=1, RN=4, pD=3, D=3, TotalTime=40`. Within your for loop, set the seed (123+i) so that results will be reproducible and easy to grade.
+  - Store the results of the 10 simulations in a list. This should give you a list of length 10, consisting of data frames corresponding to your 10 simulations.
+  - Convert the list of results to a data frame with 10 columns, as follows: `Simulation, Time, S, E, I, R, E_SE, I_EI, R_IR`. To accomplish this, you must use the `ld2d` function from the `str2str` package (check out the help documentation!!). You will need to specify:
+    - a list of data.frames (`ld`), the dimension over which you want to bind your data frames together (`along` -- we want rows); 
+    - the name of the column corresponding to our list names (`rtn.listnames.nm` -- recall that the list objects correspond to our different simulations);
+    - and we want to exclude row names (`rtn.rownames.nm = NULL`). 
+  - Print the first 10 rows of your new data frame using the `head` function. Check out the help documentation if you don't know how to do this.
+
+```{r}
+
+```
+
+**LD 2. Do the same thing as in LD 1, except this time, conduct 50 simulations, rather than 10, save the object as `SEIR_sim_100`, and print the *last* 10 rows of your new data frame using the `tail` function. Check out the help documentation if you are unfamiliar with this function.**
+
+```{r}
+
+```
+
+
+
+## Monte Carlo Intervals
+
+In a previous R Lab, we discussed using a type of interval, called a Monte Carlo interval, to summarize the variability across different stochastic simulations, given the same initial conditions. We formed confidence bands by calculating the MC interval at each time point for each compartment. To complete the following exercises, you will summarize the variability in the stochastic simulations you conducted in the converting lists to data frames section. 
+
+**MC 1. Using a for loop and the quantile function, create a data frame called `SEIR_summary_10` that includes the \underline{mean} and the lower and upper bounds for the S, E, I, and R compartments corresponding to a 90% MC interval at each time point based on the results in `SEIR_sim_10`. Your data frame should have 13 columns, 3 for each compartment and one for time. Display the first 6 rows of your resulting data frame using the head function.**
+
+*Suggestions and hints: You will need to index over time in your for loop, meaning you will need to apply the quantile function for all simulation results at time point t. Depending on how you set up your code, it may be useful to use the `select` function (subsets data frame by column) to select the column corresponding to the compartment of interest. It may be useful to combine this with the `filter` function (subsets data frame by row) to `SEIR_sim_10` within your for loop, with the logical filter `Time == t`, and then apply the quantile function to this filtered data. Think carefully about whether you should filter or select first!! Note, the result of your selecting and filtering will be a list -- you will need to apply the function `unlist` to avoid errors with the quantile function. Also, using filter, your for loop can start at 0, but you need to be very careful with your indexing!*
+
+```{r}
+
+```
+
+**MC 2. Do the same thing as in MC 1, except this time perform this task for SEIR_sim_100. Your resulting data frame should be called `SEIR_summary_100`.**
+
+```{r}
+
+```
+
+**MC 3. Do the same thing as in MC 1, except this time perform this task for SEIR_sim_100 and create 80% MC intervals. Your resulting data frame should be called `SEIR_summary_100_2`.**
+
+```{r}
+
+```
+
+
+## Presenting results: `ggplot2`
+
+Now, we are going to use the results from MC 1, MC 2, and MC 3 and explore ways to present plots that make comparing plots more easily.
+
+**PR 1(a). Although we have calculated the averages for simulation results, we can also directly calculate the true means for this model by running the deterministic SEIR model. For this problem, you should do the following in the same plot:**
+
+  - plot the means (from simulation) and specify `linetype="dashed"`;
+  - add the deterministic results for each of the compartments (you will need to specify different data within geom_line when you add these results);
+  - change the label on the y-axis to "Count" using `ylab`;
+  - change the label on the x-axis to "Time (Days)" using `xlab`
+
+```{r}
+
+```
+
+**PR 1(b). Repeat what you did in PR 1(a), this time for `SEIR_summary_100`.**
+
+```{r}
+
+```
+
+**PR 2. You will notice that the simulation-based means and the means from the deterministic model are not the same for either 10 or 100 simulations, although visually there appears to be more agreement for 100 simulations than for 10. It would be nice to put these two plots side-by-side to facilitate comparison. Although there are multiple ways to accomplish this, one way is to use the function `ggarrange` from the ggpubr package. Complete the following steps:**
+
+  - Assign your code from PR 1(a) to the object `pSEIR_10`.
+  - Assign your code from PR 2(b) to the object `pSEIR_100`.
+  - Use `ggarrange` - include `pSEIR_10` and `pSEIR_100`, separated by a comma (this is your list of plots, if you are consulting the help documentation), specify `ncol=1`, and add labels using the `labels` variable in this function.
+  
+```{r}
+
+```
+
+**PR 3. Using the results from SEIR_summary_100, make two separate plots: one that includes the simulation means and corresponding 80% MC intervals (using `geom_ribbon`), and one that includes the simulation means and corresponding 95% MC intervals (using `geom_ribbon`). Present these plots side-by-side (`nrow=1`) using `ggarrange`. Be sure to label your plots.**
+
+```{r}
+
+```
+
