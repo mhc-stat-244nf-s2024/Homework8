@@ -77,9 +77,9 @@ SEIR_simulation <- function(N, S0, E0, I0, RN, pD, D, TotalTime, stochastic=FALS
     for (t in 2:(TotalTime+1)){
       SEIR_df$lambda_t[t] <- lambda_t_fcn(RN=RN, D=D, I_i=SEIR_df$I[t-1], N=N)
       SEIR_df$S[t] <- SEIR_df$S[t-1]-SEIR_df$lambda_t[t]*SEIR_df$S[t-1]
-      SEIR_df$E[t] <- SEIR_df$E[t-1]+SEIR_df$lambda_t[t]*SEIR_df$S[t-1]-risk_pi*SEIR_df$I[t-1]
-      SEIR_df$I[t] <- SEIR_df$I[t-1]+risk_pi*SEIR_df$I[t-1]-risk_rho*SEIR_df$R[t-1]
-      SEIR_df$R[t] <- SEIR_df$R[t-1]+risk_rho*SEIR_df$R[t-1]
+      SEIR_df$E[t] <- SEIR_df$E[t-1]+SEIR_df$lambda_t[t]*SEIR_df$S[t-1]-risk_pi*SEIR_df$E[t-1]
+      SEIR_df$I[t] <- SEIR_df$I[t-1]+risk_pi*SEIR_df$E[t-1]-risk_rho*SEIR_df$I[t-1]
+      SEIR_df$R[t] <- SEIR_df$R[t-1]+risk_rho*SEIR_df$I[t-1]
     }
   }
 
@@ -103,7 +103,7 @@ SEIR_simulation <- function(N, S0, E0, I0, RN, pD, D, TotalTime, stochastic=FALS
 
 ```
 
-**LD 2. Do the same thing as in LD 1, except this time, conduct 50 simulations, rather than 10, save the object as `SEIR_sim_100`, and print the *last* 10 rows of your new data frame using the `tail` function. Check out the help documentation if you are unfamiliar with this function.**
+**LD 2. Do the same thing as in LD 1, except this time, conduct 100 simulations, rather than 10, save the object as `SEIR_sim_100`, and print the *last* 10 rows of your new data frame using the `tail` function. Check out the help documentation if you are unfamiliar with this function.**
 
 ```{r}
 
@@ -167,7 +167,7 @@ Now, we are going to use the results from MC 1, MC 2, and MC 3 and explore ways 
 
 ```
 
-**PR 3. Using the results from SEIR_summary_100, make two separate plots: one that includes the simulation means and corresponding 80% MC intervals (using `geom_ribbon`), and one that includes the simulation means and corresponding 95% MC intervals (using `geom_ribbon`). Present these plots side-by-side (`nrow=1`) using `ggarrange`. Be sure to label your plots.**
+**PR 3. Using the results from SEIR_summary_100, make two separate plots: one that includes the simulation means and corresponding 80% MC intervals (using `geom_ribbon`), and one that includes the simulation means and corresponding 90% MC intervals (using `geom_ribbon`). Present these plots side-by-side (`nrow=1`) using `ggarrange`. Be sure to label your plots.**
 
 ```{r}
 
